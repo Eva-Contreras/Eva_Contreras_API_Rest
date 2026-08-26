@@ -1,0 +1,10 @@
+POST /posts HTTP/1.1
+Host: jsonplaceholder.typicode.com
+Content-Type: application/json
+Content-Length: 81
+
+{
+    "title": "Peticion HTTPS",
+    "body": "Mi primer peticion HTTPS",
+    "userId": 1
+}
