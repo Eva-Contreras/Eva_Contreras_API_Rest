@@ -20,7 +20,7 @@ router.get('/', (req, res) => {
 
     if (req.query.director) {
         resultado = resultado.filter(
-            p => p.director === req.query.director
+            p => p.director.toLowerCase().includes(req.query.director.toLowerCase())
         );
     }
 
@@ -28,6 +28,12 @@ router.get('/', (req, res) => {
         resultado = resultado.filter(
             p => p.año === parseInt(req.query.año)
         );
+    }
+
+    if (resultado.length === 0) {
+        return res.status(404).json({
+            mensaje: "Película no encontrada"
+        });
     }
 
     res.json(resultado);
