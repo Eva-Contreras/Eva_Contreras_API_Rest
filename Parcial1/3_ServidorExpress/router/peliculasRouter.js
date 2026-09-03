@@ -6,7 +6,9 @@ const peliculas = [
     { id: 1, titulo: "Inception", director: "Christopher Nolan", anio: 2010 },
     { id: 2, titulo: "Interstellar", director: "Christopher Nolan", anio: 2014 },
     { id: 3, titulo: "TinkerBell", director: "Bradley Raymond", anio: 2008 },
-    { id: 4, titulo: "The Matrix", director: "Wachowski Sisters", anio: 1999 }
+    { id: 4, titulo: "The Matrix", director: "Wachowski Sisters", anio: 1999 },
+    { id: 5, titulo: "Gladiator", director: "Ridley Scott", anio: 2000 },
+    { id: 6, titulo: "Snoopy y Charlie Brown: La pelicula", director: "Steve Martino", anio: 2015 }
 ];
 
 router.get('/', (req, res) => {
