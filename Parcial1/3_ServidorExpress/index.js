@@ -1,6 +1,7 @@
 import express from 'express';
 import morgan from 'morgan';
 import multer from 'multer';
+import pug from 'pug';
 import fs from 'fs';
 import path from 'path';
 import peliculasRouter from './router/peliculasRouter.js';
@@ -16,6 +17,7 @@ const storage = multer.diskStorage({
     }
 });
 const upload = multer({ storage });
+
 const obtenerFechaLocal = () => new Date().toLocaleString('es-MX', {
     dateStyle: 'short',
     timeStyle: 'medium'
@@ -56,7 +58,7 @@ const horarioLaboral = (req, res, next) => {
     const hora = fecha.getHours();
 
     const esDiaLaboral = dia >= 1 && dia <= 5;
-    const estaEnHorario = hora >= 7 && hora < 14;
+    const estaEnHorario = hora >= 6 && hora < 20;
 
     if (!esDiaLaboral || !estaEnHorario) {
         return res.status(503).json({
@@ -73,9 +75,24 @@ app.use('/uploads', express.static('uploads'));
 app.use(morgan(':remote-addr - :remote-user [:local-date] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"', { stream: accesos }));
 app.use(horarioLaboral);
 
-app.get('/', (req, res) => {
-    res.send('¡API de Películas funcionando!');
+
+// Vistas
+app.set('view engine', 'pug');
+app.set('views', './views');
+
+app.get('/',(req,res,next) => {
+    res.render('hola', 
+        {   
+            titulo1: '¡API de Películas funcionando!', 
+            mensaje: 'Hecho por: Eva Contreras',
+            titulo2: 'Rutas de consulta:',
+            ruta1: 'GET /peliculas',
+        });
 });
+
+// app.get('/', (req, res) => {
+//     res.send('¡API de Películas funcionando!');
+// });
 
 app.post("/subir", upload.single("archivo"), (req, res) => {
     if (!req.file) {
