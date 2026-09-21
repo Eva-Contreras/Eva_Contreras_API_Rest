@@ -45,10 +45,10 @@ app.post("/subir", upload.single("archivo"), (req, res) => {
 // Aquí se invocan las rutas
 app.use('/peliculas', peliculasRouter);
 
-app.use((req, res) => {
-    res.status(404).json({
-        mensaje: 'Ruta no encontrada'
-    });
+app.use((req, res, next) => {
+    const error = new Error(`Ruta no encontrada: ${req.method} ${req.originalUrl}`);
+    error.statusCode = 404;
+    next(error);
 });
 
 app.use(controlErrores);

@@ -1,4 +1,5 @@
 import express from 'express';
+import halson from 'halson';
 
 const router = express.Router();
 
@@ -12,6 +13,7 @@ const peliculas = [
 ];
 
 router.get('/', (req, res) => {
+
     let resultado = peliculas;
 
     if (req.query.titulo) {
@@ -19,37 +21,63 @@ router.get('/', (req, res) => {
             p => p.titulo.toLowerCase().includes(req.query.titulo.toLowerCase())
         );
     }
+
     if (req.query.director) {
         resultado = resultado.filter(
             p => p.director.toLowerCase().includes(req.query.director.toLowerCase())
         );
     }
+
     if (req.query.anio) {
         resultado = resultado.filter(
             p => p.anio === parseInt(req.query.anio)
         );
     }
+
     if (resultado.length === 0) {
         return res.status(404).json({
             mensaje: "Película no encontrada"
         });
     }
 
-    res.json(resultado);
+    const respuesta = resultado.map(pelicula => ({
+        ...halson(pelicula),
+        link: `${req.protocol}://${req.get('host')}${req.baseUrl}/${pelicula.id}`
+    }));
+
+    res.json(respuesta);
 });
 
-router.get('/:id', (req, res) => {
-    const id = parseInt(req.params.id);
+router.get('/:id', (req, res, next) => {
+
+    const id = parseInt(req.params.id, 10);
+
+    if (Number.isNaN(id)) {
+        const error = new Error(
+            'El id de la película debe ser un número válido'
+        );
+
+        error.statusCode = 400;
+
+        return next(error);
+    }
 
     const pelicula = peliculas.find(p => p.id === id);
 
     if (pelicula) {
-        res.json(pelicula);
-    } else {
-        res.status(404).json({
-            mensaje: "Película no encontrada"
-        });
+        const respuesta = {
+            ...halson(pelicula),
+            link: `${req.protocol}://${req.get('host')}${req.originalUrl}`
+        };
+
+        return res.json(respuesta);
     }
+
+    const error = new Error('Película no encontrada');
+
+    error.statusCode = 404;
+
+    return next(error);
 });
 
 export default router;

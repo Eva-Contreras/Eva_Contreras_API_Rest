@@ -3,7 +3,7 @@ export const horarioLaboral = (req, res, next) => {
     const dia = fecha.getDay();
     const hora = fecha.getHours();
 
-    const esDiaLaboral = dia >= 1 && dia <= 5;
+    const esDiaLaboral = dia >= 1 && dia <= 7;
     const estaEnHorario = hora >= 6 && hora < 20;
 
     if (!esDiaLaboral || !estaEnHorario) {
