@@ -5,13 +5,25 @@ import { accesos, morgan } from './middleware/logDeAccesos.js';
 import { guardarMetadata, upload } from './middleware/subirArchivos.js';
 import controlErrores from './middleware/controlErrores.js';
 import { authMiddleware } from './middleware/authMiddleware.js';
-import 'dotenv/config'
+import session from 'express-session';
+import 'dotenv/config';
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 // Estos son middlewares de aplicación que se ejecuta antes de las rutas
 app.use(express.json());
+app.use(session({
+    secret: process.env.SESSION_SECRET || process.env.API_TOKEN,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 30 * 60 * 1000,
+    },
+}));
 app.use('/uploads', express.static('uploads'));
 app.use(morgan(':remote-addr - :remote-user [:local-date] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"', { stream: accesos }));
 app.use(horarioLaboral);
@@ -28,6 +40,10 @@ app.get('/',(req,res,next) => {
             titulo2: 'Rutas de consulta:',
             ruta1: 'GET /peliculas',
         });
+});
+
+app.post('/sesion', authMiddleware, (req, res) => {
+    res.sendStatus(204);
 });
 
 app.post("/subir", upload.single("archivo"), (req, res) => {

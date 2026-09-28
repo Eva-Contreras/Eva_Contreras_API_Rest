@@ -6,9 +6,11 @@ html
   body
     h1= titulo1
     h2= mensaje
+    input(type='password', id='token', placeholder='Token Bearer')
+    p(id='mensaje')
     h3= titulo2
     p
-      a(href='/peliculas')= ruta1
+      button(type='button', id='consultarPeliculas')= ruta1
 
     form(id='formPelicula')
       label(for='idPelicula') Ingresa un ID de película:
@@ -18,13 +20,38 @@ html
     script.
       const formPelicula = document.getElementById('formPelicula');
       const inputPelicula = document.getElementById('idPelicula');
+      const inputToken = document.getElementById('token');
+      const mensaje = document.getElementById('mensaje');
+
+      function consultar(url) {
+        mensaje.textContent = '';
+        fetch('/sesion', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${inputToken.value.trim()}` }
+          })
+          .then(async respuesta => {
+            if (!respuesta.ok) {
+              const datos = await respuesta.json();
+              throw new Error(datos.mensaje || 'No se pudo validar el token.');
+            }
+
+            window.location.href = url;
+          })
+          .catch(error => {
+            mensaje.textContent = error.message;
+          });
+      }
+
+      document.getElementById('consultarPeliculas').addEventListener('click', () => {
+        consultar('/peliculas');
+      });
 
       formPelicula.addEventListener('submit', (event) => {
         event.preventDefault();
         const id = inputPelicula.value.trim();
 
         if (id) {
-          window.location.href = `/peliculas/${id}`;
+          consultar(`/peliculas/${id}`);
         }
       });
 

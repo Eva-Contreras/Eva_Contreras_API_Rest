@@ -1,4 +1,8 @@
 export function authMiddleware(req, res, next) {
+    if (req.session?.autenticado) {
+        return next();
+    }
+
     const authorization = req.get('authorization') ?? '';
     const match = authorization.match(/^Bearer\s+(.+)$/i);
 
@@ -9,5 +13,12 @@ export function authMiddleware(req, res, next) {
             .json({ mensaje: 'Token inválido o faltante' });
     }
 
-    next();
+    req.session.autenticado = true;
+    req.session.save(error => {
+        if (error) {
+            return next(error);
+        }
+
+        next();
+    });
 }
