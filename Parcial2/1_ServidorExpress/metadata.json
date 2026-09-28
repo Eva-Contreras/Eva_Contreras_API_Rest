@@ -1,0 +1,32 @@
+[
+  {
+    "nombre": "TwiceInHouston.jpg",
+    "tipo": "image/jpeg",
+    "tamaño": 1560095,
+    "fechaSubida": "03/09/26, 4:33:14 p.m."
+  },
+  {
+    "nombre": "TwiceInMexico.jpg",
+    "tipo": "image/jpeg",
+    "tamaño": 582027,
+    "fechaSubida": "03/09/26, 4:34:15 p.m."
+  },
+  {
+    "nombre": "Horario.jpg",
+    "tipo": "image/jpeg",
+    "tamaño": 134238,
+    "fechaSubida": "04/09/26, 7:46:49 a.m."
+  },
+  {
+    "nombre": "CartaPresentacionPDF.pdf",
+    "tipo": "application/pdf",
+    "tamaño": 149094,
+    "fechaSubida": "04/09/26, 7:47:08 a.m."
+  },
+  {
+    "nombre": "CartaComprimisoPDF.pdf",
+    "tipo": "application/pdf",
+    "tamaño": 98437,
+    "fechaSubida": "04/09/26, 7:47:16 a.m."
+  }
+]
