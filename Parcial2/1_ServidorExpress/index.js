@@ -5,6 +5,7 @@ import { accesos, morgan } from './middleware/logDeAccesos.js';
 import { guardarMetadata, upload } from './middleware/subirArchivos.js';
 import controlErrores from './middleware/controlErrores.js';
 import { authMiddleware } from './middleware/authMiddleware.js';
+import { apiKeyMiddleware } from './middleware/apiKeyMiddleware.js';
 import session from 'express-session';
 import 'dotenv/config';
 
@@ -61,7 +62,7 @@ app.post("/subir", upload.single("archivo"), (req, res) => {
 });
 
 // Aquí se invocan las rutas
-app.use('/peliculas', authMiddleware, peliculasRouter);
+app.use('/peliculas', apiKeyMiddleware, peliculasRouter);
 
 app.use((req, res, next) => {
     const error = new Error(`Ruta no encontrada: ${req.method} ${req.originalUrl}`);
