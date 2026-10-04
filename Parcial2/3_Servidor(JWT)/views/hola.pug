@@ -1,0 +1,128 @@
+doctype html
+html
+  head
+    meta(charset='utf-8')
+    meta(name='viewport', content='width=device-width, initial-scale=1')
+    title= titulo1
+  body
+    main(id='vista')
+      h1= titulo1
+      h2= mensaje
+      h3 Iniciar sesión
+      form(id='formSesion')
+        label(for='usuario') Usuario
+        input(type='text', id='usuario', name='usuario', autocomplete='username', required)
+        label(for='contrasena') Contraseña
+        input(type='password', id='contrasena', name='contrasena', autocomplete='current-password', required)
+        button(type='submit') Ingresar
+
+      p(id='mensaje', role='status', aria-live='polite')
+
+      section(id='consultas', hidden)
+        h3= titulo2
+        button(type='button', id='consultarPeliculas')= ruta1
+        form(id='formPelicula')
+          label(for='idPelicula') Consultar película por ID
+          input(type='number', id='idPelicula', name='idPelicula', min='1', placeholder='Ej. 1', required)
+          button(type='submit') Consultar
+        button(type='button', id='cerrarSesion') Cerrar sesión
+    main(id='paginaRespuesta', hidden)
+      pre(id='respuestaJson', aria-live='polite')
+
+
+    script.
+      const formSesion = document.getElementById('formSesion');
+      const inputUsuario = document.getElementById('usuario');
+      const inputContrasena = document.getElementById('contrasena');
+      const consultas = document.getElementById('consultas');
+      const vista = document.getElementById('vista');
+      const paginaRespuesta = document.getElementById('paginaRespuesta');
+      const respuestaJson = document.getElementById('respuestaJson');
+      const formPelicula = document.getElementById('formPelicula');
+      const inputPelicula = document.getElementById('idPelicula');
+      const mensaje = document.getElementById('mensaje');
+
+      function mostrarRespuesta(datos) {
+        const estadoRespuesta = { mostrandoRespuesta: true };
+        if (history.state?.mostrandoRespuesta) {
+          history.replaceState(estadoRespuesta, '', window.location.href);
+        } else {
+          history.pushState(estadoRespuesta, '', window.location.href);
+        }
+        respuestaJson.textContent = JSON.stringify(datos, null, 2);
+        vista.hidden = true;
+        paginaRespuesta.hidden = false;
+      }
+
+      window.addEventListener('popstate', (event) => {
+        const mostrarJson = event.state?.mostrandoRespuesta === true;
+        vista.hidden = mostrarJson;
+        paginaRespuesta.hidden = !mostrarJson;
+      });
+
+      async function consultar(url) {
+        mensaje.textContent = '';
+
+        try {
+          const respuesta = await fetch(url);
+          const datos = await respuesta.json();
+
+          mostrarRespuesta(datos);
+        } catch (error) {
+          mostrarRespuesta({ mensaje: error.message });
+        }
+      }
+
+      formSesion.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        mensaje.textContent = '';
+
+        try {
+          const respuesta = await fetch('/sesion', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              usuario: inputUsuario.value,
+              contrasena: inputContrasena.value
+            })
+          });
+          const datos = await respuesta.json();
+
+          if (!respuesta.ok) {
+            throw new Error(datos.mensaje || 'No se pudo iniciar sesión.');
+          }
+
+          formSesion.hidden = true;
+          consultas.hidden = false;
+          inputContrasena.value = '';
+          mensaje.textContent = 'Sesión iniciada.';
+        } catch (error) {
+          mensaje.textContent = error.message;
+        }
+      });
+      document.getElementById('consultarPeliculas').addEventListener('click', () => {
+        consultar('/peliculas');
+      });
+
+      formPelicula.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const id = inputPelicula.value.trim();
+
+        if (id) {
+          consultar(`/peliculas/${id}`);
+        }
+      });
+
+      document.getElementById('cerrarSesion').addEventListener('click', () => {
+        fetch('/cerrar-sesion', { method: 'POST' })
+          .then(() => {
+            formSesion.hidden = false;
+            consultas.hidden = true;
+            mensaje.textContent = 'Sesión cerrada.';
+          })
+          .catch(error => {
+            mensaje.textContent = error.message;
+          });
+      });
+
+
