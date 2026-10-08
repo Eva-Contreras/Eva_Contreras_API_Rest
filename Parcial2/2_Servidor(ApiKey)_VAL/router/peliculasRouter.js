@@ -1,5 +1,6 @@
 import express from 'express';
 import halson from 'halson';
+import { validarPelicula } from '../middleware/validarMiddleware.js';
 
 const router = express.Router();
 
@@ -11,6 +12,20 @@ const peliculas = [
     { id: 5, titulo: "Gladiator", director: "Ridley Scott", anio: 2000 },
     { id: 6, titulo: "Snoopy y Charlie Brown: La pelicula", director: "Steve Martino", anio: 2015 }
 ];
+
+router.post('/', validarPelicula, (req, res) => {
+    const pelicula = {
+        id: Math.max(...peliculas.map(item => item.id)) + 1,
+        ...req.body
+    };
+
+    peliculas.push(pelicula);
+
+    res.status(201).json({
+        ...halson(pelicula),
+        link: `${req.protocol}://${req.get('host')}${req.baseUrl}/${pelicula.id}`
+    });
+});
 
 router.get('/', (req, res) => {
 

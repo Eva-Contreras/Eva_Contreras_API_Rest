@@ -1,4 +1,5 @@
 import express from 'express';
+import https from 'https';
 import peliculasRouter from './router/peliculasRouter.js';
 import { horarioLaboral } from './middleware/horarioLaboral.js';
 import { accesos, morgan } from './middleware/logDeAccesos.js';
@@ -6,6 +7,7 @@ import { guardarMetadata, upload } from './middleware/subirArchivos.js';
 import controlErrores from './middleware/controlErrores.js';
 import { apiKeyMiddleware } from './middleware/apiKeyMiddleware.js';
 import 'dotenv/config';
+import fs from 'fs';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -55,6 +57,11 @@ app.use((req, res, next) => {
 
 app.use(controlErrores);
 
-app.listen(port, () => {
-    console.log(`Servidor escuchando en http://localhost:${port}`);
+const options = {
+    key: fs.readFileSync('./ssl/server.key'),
+    cert: fs.readFileSync('./ssl/server.crt')
+};
+
+https.createServer(options, app).listen(port, () => {
+    console.log(`Servidor escuchando en https://localhost:${port}`);
 });
