@@ -20,7 +20,7 @@ app.use(horarioLaboral);
 
 // Vistas
 app.set('view engine', 'pug');
-app.set('views', './views');
+app.set('views', './src/views');
 
 app.get('/',(req,res,next) => {
     res.render('hola', 
