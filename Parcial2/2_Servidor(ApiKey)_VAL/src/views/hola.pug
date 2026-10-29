@@ -11,6 +11,8 @@ html
       p(id='mensaje')
       h3= titulo2
       p
+        a(href='/api-docs') Abrir documentación interactiva (Swagger)
+      p
         button(type='button', id='consultarPeliculas')= ruta1
 
       form(id='formPelicula')
@@ -72,4 +74,3 @@ html
           consultar(`/peliculas/${id}`);
         }
       });
-

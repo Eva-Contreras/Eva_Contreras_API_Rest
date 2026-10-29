@@ -35,6 +35,44 @@ El servidor estará disponible en `https://localhost:3000` (o en el puerto
 configurado). Como usa un certificado local, el cliente HTTP puede mostrar una
 advertencia de confianza del certificado.
 
+## Documentación Swagger / OpenAPI
+
+Abre `https://localhost:3000/api-docs` (o usa el puerto configurado) para
+consultar y probar `GET /peliculas/` y `GET /peliculas/{id}` desde Swagger UI.
+La interfaz usa el tema Material de `swagger-ui-themes`. La portada Markdown se
+toma de esta sección del README; los ejemplos cURL y JavaScript aparecen dentro
+de la descripción de cada ruta. La especificación se genera con `swagger-jsdoc`
+a partir de los comentarios `@swagger` de esas rutas en
+`src/router/peliculasRouter.js`; los demás endpoints siguen disponibles en el
+servidor, pero no aparecen en Swagger. El documento OpenAPI en JSON también
+está disponible en `https://localhost:3000/api-spec`. Pulsa **Authorize** e
+ingresa el valor de `API_KEY`; Swagger lo enviará como el encabezado
+`x-api-key`. Para generar o actualizar el archivo `openapi.yaml`, ejecuta
+`npm run openapi`.
+
+<!-- swagger-description:start -->
+
+![Portada de la API REST de películas](/swagger-assets/swagger-cover.svg)
+
+## API REST de películas
+
+Consulta una película usando su identificador. Esta documentación presenta
+las operaciones `GET /peliculas/` (listar y filtrar) y `GET /peliculas/{id}`
+(buscar por identificador).
+
+### Autenticación
+
+La ruta requiere una API key. Pulsa **Authorize** y escribe el valor de
+`API_KEY` configurado en el archivo `.env`. Swagger lo enviará en el encabezado
+`x-api-key`.
+
+### Horario del servicio
+
+El servidor acepta solicitudes de lunes a sábado, de 06:00 a 19:59, según su
+hora local. Fuera de ese horario responde con HTTP `503`.
+
+<!-- swagger-description:end -->
+
 ## Autenticación
 
 Las rutas de películas y la carga de archivos requieren la API key en el

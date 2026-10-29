@@ -1,6 +1,10 @@
 import express from 'express';
 import https from 'https';
+import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
+import swaggerUi from 'swagger-ui-express';
 import peliculasRouter from './router/peliculasRouter.js';
+import swaggerDocs from './swagger.js';
 import { horarioLaboral } from './middleware/horarioLaboral.js';
 import { accesos, morgan } from './middleware/logDeAccesos.js';
 import { guardarMetadata, upload } from './middleware/subirArchivos.js';
@@ -11,9 +15,32 @@ import fs from 'fs';
 
 const app = express();
 const port = process.env.PORT || 3000;
+const require = createRequire(import.meta.url);
+const swaggerThemePath = require.resolve(
+    'swagger-ui-themes/themes/3.x/theme-material.css'
+);
 
 // Estos son middlewares de aplicación que se ejecuta antes de las rutas
 app.use(express.json());
+app.use(
+    '/swagger-assets',
+    express.static(fileURLToPath(new URL('./assets', import.meta.url)))
+);
+
+// Swagger
+app.get('/swagger-theme.css', (req, res) => {
+    res.sendFile(swaggerThemePath);
+});
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs, {
+    customCssUrl: '/swagger-theme.css',
+    swaggerOptions: {
+        docExpansion: 'none',
+        defaultModelsExpandDepth: 1
+    }
+}));
+app.get('/api-spec', (req, res) => {
+    res.json(swaggerDocs);
+});
 app.use('/uploads', express.static('uploads'));
 app.use(morgan(':remote-addr - :remote-user [:local-date] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"', { stream: accesos }));
 app.use(horarioLaboral);
