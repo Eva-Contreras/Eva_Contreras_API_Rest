@@ -31,6 +31,15 @@ desde esta misma carpeta:
 npm start
 ```
 
+## Pruebas
+
+Ejecuta las pruebas de las rutas GET de películas (con Chai-HTTP) y del
+middleware de horario laboral:
+
+```bash
+npm run test
+```
+
 El servidor estará disponible en `https://localhost:3000` (o en el puerto
 configurado). Como usa un certificado local, el cliente HTTP puede mostrar una
 advertencia de confianza del certificado.

@@ -1,6 +1,6 @@
 import express from 'express';
 import https from 'https';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import peliculasRouter from './router/peliculasRouter.js';
 import swaggerRouter from './documentation/swaggerRouter.js';
 import rapidocRouter from './documentation/rapidocRouter.js';
@@ -74,11 +74,15 @@ app.use((req, res, next) => {
 
 app.use(controlErrores);
 
-const options = {
-    key: fs.readFileSync('./ssl/server.key'),
-    cert: fs.readFileSync('./ssl/server.crt')
-};
+if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
+    const options = {
+        key: fs.readFileSync('./ssl/server.key'),
+        cert: fs.readFileSync('./ssl/server.crt')
+    };
 
-https.createServer(options, app).listen(port, () => {
-    console.log(`Servidor escuchando en https://localhost:${port}`);
-});
+    https.createServer(options, app).listen(port, () => {
+        console.log(`Servidor escuchando en https://localhost:${port}`);
+    });
+}
+
+export default app;
