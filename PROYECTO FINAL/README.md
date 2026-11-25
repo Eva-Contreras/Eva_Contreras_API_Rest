@@ -1,14 +1,14 @@
 # API REST de películas
 
 Servidor REST desarrollado con Express. Proporciona operaciones de consulta y
-creación de películas, protección mediante API key, carga de archivos y
-conexión HTTPS.
+creación de películas, protección mediante API key y carga de archivos.
 
 ## Requisitos
 
 - Node.js 20 o 22 en adelante, y npm.
 - MySQL con acceso a la base de datos de películas.
-- Certificado y clave HTTPS en `ssl/server.crt` y `ssl/server.key`.
+- Para ejecución local: certificado y clave HTTPS en `ssl/server.crt` y
+  `ssl/server.key`. En producción el proveedor se encarga de HTTPS.
 
 ## Instalación y ejecución
 
@@ -29,6 +29,12 @@ DB_USER=tu_usuario
 DB_PASSWORD=tu_contraseña
 DB_NAME=api_peliculas_db
 ```
+
+Las conexiones a hosts `*.aivencloud.com` activan TLS automáticamente.
+Para otro host, configura `DB_SSL=true` para activar TLS o `DB_SSL=false`
+para desactivarlo. Sin `DB_SSL_CA`, TLS cifra la conexión pero **no verifica
+la identidad del servidor**. Para verificarla, configura `DB_SSL_CA` con el
+contenido PEM del certificado CA de Aiven; no guardes credenciales en Git.
 
 Antes de iniciar la API, crea la base de datos y la tabla con el siguiente SQL
 desde un cliente MySQL, usando una cuenta con permisos suficientes:
@@ -58,6 +64,13 @@ desde esta misma carpeta:
 npm start
 ```
 
+En Render o Railway, configura el directorio raíz del servicio como
+`PROYECTO FINAL`, define `NODE_ENV=production` y las variables de MySQL y
+`API_KEY` en el panel. El proveedor asigna `PORT` y termina HTTPS; la aplicación
+escucha HTTP internamente y confía en un proxy inverso. En producción, Swagger
+utiliza el mismo servidor desde el que se abre la documentación. CORS permite
+peticiones desde cualquier origen.
+
 ## Pruebas
 
 Ejecuta las pruebas de las rutas de películas (con Chai-HTTP y la base de
@@ -69,17 +82,17 @@ npm run test
 
 El servidor estará disponible en `https://localhost:3000` (o en el puerto
 configurado). Como usa un certificado local, el cliente HTTP puede mostrar una
-advertencia de confianza del certificado.
+advertencia de confianza del certificado. En producción, usa la URL HTTPS
+proporcionada por el proveedor.
 
 ## Documentación Swagger / OpenAPI
 
 Abre `https://localhost:3000/api-docs` (o usa el puerto configurado) para
-consultar y probar `GET /peliculas/` y `GET /peliculas/{id}` desde Swagger UI,
-con su apariencia original. La portada Markdown se toma de esta sección del
-README; los ejemplos cURL y JavaScript aparecen dentro de la descripción de
-cada ruta. La especificación se genera con `swagger-jsdoc` a partir de los
-comentarios `@swagger` de esas rutas en `src/router/peliculasRouter.js`; los
-demás endpoints siguen disponibles en el servidor, pero no aparecen en Swagger.
+consultar y probar las operaciones de películas desde Swagger UI. La portada
+Markdown se toma de esta sección del README. La especificación se genera con
+`swagger-jsdoc` a partir de los comentarios `@swagger` de esas rutas en
+`src/router/peliculasRouter.js`; los demás endpoints siguen disponibles en el
+servidor, pero no aparecen en Swagger.
 
 Como alternativa, abre `https://localhost:3000/api-reference` para consultar la
 misma especificación OpenAPI con **RapiDoc**. En ambas interfaces, la API key
@@ -102,9 +115,9 @@ dependencia `glob` de `swagger-jsdoc`, sin sustituir el generador de OpenAPI.
 
 ## API REST de películas
 
-Consulta una película usando su identificador. Esta documentación presenta
-las operaciones `GET /peliculas/` (listar y filtrar) y `GET /peliculas/{id}`
-(buscar por identificador).
+Consulta, crea, actualiza o elimina películas. Esta documentación presenta
+las operaciones `GET` y `POST` en `/peliculas/`, y `GET`, `PUT` y `DELETE`
+en `/peliculas/{id}`.
 
 ### Autenticación
 
@@ -143,10 +156,12 @@ horario, el servidor responde con HTTP `503`.
 | `GET` | `/peliculas?anio=2010` | Sí | Filtra por año. |
 | `GET` | `/peliculas/:id` | Sí | Busca una película por ID. |
 | `POST` | `/peliculas` | Sí | Agrega una película. |
+| `PUT` | `/peliculas/:id` | Sí | Actualiza una película completa. |
+| `DELETE` | `/peliculas/:id` | Sí | Elimina una película. |
 | `POST` | `/subir` | Sí | Sube un archivo en el campo `archivo`. |
 | `GET` | `/uploads/:nombre` | No | Accede a un archivo guardado. |
 
-Para crear una película, envía JSON con los tres campos requeridos:
+Para crear o actualizar una película, envía JSON con los tres campos requeridos:
 
 ```json
 {
@@ -159,10 +174,14 @@ Para crear una película, envía JSON con los tres campos requeridos:
 `titulo` y `director` deben ser cadenas no vacías de hasta 255 y 150 caracteres,
 respectivamente; `anio` debe ser un entero positivo de hasta 2147483647.
 Si la validación falla, la API responde con HTTP `400`.
+Al eliminar una película existente, la API responde con HTTP `204` sin contenido.
 
 Para subir un archivo, usa una solicitud `multipart/form-data` con el campo
 `archivo`. Los archivos se guardan en `uploads/` y sus datos se agregan a
-`metadata.json`.
+`metadata.json`. Los archivos subidos se sirven públicamente mediante
+`/uploads/:nombre`. En servicios con almacenamiento efímero, tanto los archivos
+como los metadatos pueden perderse al reiniciar o desplegar; para conservarlos
+se necesita almacenamiento persistente.
 
 ## Datos y registros
 
@@ -170,6 +189,8 @@ Para subir un archivo, usa una solicitud `multipart/form-data` con el campo
 - Los accesos se registran en `logs/accesos.log`.
 - Los errores se registran en `logs/errores.log`.
 - Los metadatos de archivos subidos se guardan en `metadata.json`.
+- Los archivos de `uploads/`, los metadatos y los registros están ignorados por
+  Git, pero eliminarlos del seguimiento no los borra del historial ya publicado.
 
 ## Estructura del proyecto
 

@@ -46,3 +46,19 @@ export async function crearPelicula({ titulo, director, anio }) {
     );
     return { id: resultado.insertId, titulo, director, anio };
 }
+
+export async function actualizarPelicula(id, { titulo, director, anio }) {
+    const [resultado] = await conexion.execute(
+        'UPDATE peliculas SET titulo = ?, director = ?, anio = ? WHERE id = ?',
+        [titulo, director, anio, id]
+    );
+    return resultado.affectedRows ? { id, titulo, director, anio } : null;
+}
+
+export async function eliminarPelicula(id) {
+    const [resultado] = await conexion.execute(
+        'DELETE FROM peliculas WHERE id = ?',
+        [id]
+    );
+    return resultado.affectedRows > 0;
+}

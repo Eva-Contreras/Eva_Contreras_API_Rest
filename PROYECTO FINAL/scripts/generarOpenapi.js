@@ -26,10 +26,12 @@ export function generarOpenapi() {
                 version: '1.0.0',
                 description: datosReadme
             },
-            servers: [{
-                url: `https://localhost:${process.env.PORT || 3000}`,
-                description: 'Servidor local HTTPS'
-            }]
+            servers: process.env.NODE_ENV === 'production'
+                ? [{ url: '/', description: 'Servidor actual' }]
+                : [{
+                    url: `https://localhost:${process.env.PORT || 3000}`,
+                    description: 'Servidor local HTTPS'
+                }]
         },
         apis: [
             fileURLToPath(new URL('../src/router/peliculasRouter.js', import.meta.url))

@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors';
 import https from 'https';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import peliculasRouter from './router/peliculasRouter.js';
@@ -17,6 +18,10 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Estos son middlewares de aplicación que se ejecuta antes de las rutas
+if (process.env.NODE_ENV === 'production') {
+    app.set('trust proxy', 1);
+}
+app.use(cors());
 app.use(express.json());
 app.use(
     '/swagger-assets',
@@ -75,14 +80,20 @@ app.use((req, res, next) => {
 app.use(controlErrores);
 
 if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
-    const options = {
-        key: fs.readFileSync('./ssl/server.key'),
-        cert: fs.readFileSync('./ssl/server.crt')
-    };
+    if (process.env.NODE_ENV === 'production') {
+        const server = app.listen(port, () => {
+            console.log(`Servidor HTTP escuchando en el puerto ${server.address().port}`);
+        });
+    } else {
+        const options = {
+            key: fs.readFileSync('./ssl/server.key'),
+            cert: fs.readFileSync('./ssl/server.crt')
+        };
 
-    https.createServer(options, app).listen(port, () => {
-        console.log(`Servidor escuchando en https://localhost:${port}`);
-    });
+        https.createServer(options, app).listen(port, () => {
+            console.log(`Servidor escuchando en https://localhost:${port}`);
+        });
+    }
 }
 
 export default app;

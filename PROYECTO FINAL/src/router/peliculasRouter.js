@@ -1,17 +1,67 @@
 import express from 'express';
 import halson from 'halson';
 import { validarPelicula } from '../middleware/validarMiddleware.js';
-import { buscarPelicula, crearPelicula, listarPeliculas } from '../services/peliculasService.js';
+import {
+    actualizarPelicula,
+    buscarPelicula,
+    crearPelicula,
+    eliminarPelicula,
+    listarPeliculas
+} from '../services/peliculasService.js';
 
 const router = express.Router();
 
-router.post('/', validarPelicula, async (req, res) => {
-    const pelicula = await crearPelicula(req.body);
+// Helper para formatear la respuesta con HALSON
+const formatearPelicula = (req, pelicula) => ({
+    ...halson(pelicula),
+    link: `${req.protocol}://${req.get('host')}${req.baseUrl}/${pelicula.id}`
+});
 
-    res.status(201).json({
-        ...halson(pelicula),
-        link: `${req.protocol}://${req.get('host')}${req.baseUrl}/${pelicula.id}`
-    });
+// Helper para validar el ID numérico de la URL
+const parsearId = (paramId) => {
+    const id = parseInt(paramId, 10);
+    if (Number.isNaN(id)) {
+        const error = new Error('El id de la película debe ser un número válido');
+        error.statusCode = 400;
+        throw error;
+    }
+    return id;
+};
+
+/**
+ * @swagger
+ * /peliculas/:
+ *   post:
+ *     tags:
+ *       - Películas
+ *     summary: Registrar una nueva película
+ *     security:
+ *       - ApiKeyAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/PeliculaInput'
+ *     responses:
+ *       '201':
+ *         description: Película creada exitosamente.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Pelicula'
+ *       '400':
+ *         description: Datos de entrada inválidos.
+ *       '401':
+ *         description: API key inválida o faltante.
+ */
+router.post('/', validarPelicula, async (req, res, next) => {
+    try {
+        const nuevaPelicula = await crearPelicula(req.body);
+        res.status(201).json(formatearPelicula(req, nuevaPelicula));
+    } catch (error) {
+        next(error);
+    }
 });
 
 /**
@@ -21,20 +71,6 @@ router.post('/', validarPelicula, async (req, res) => {
  *     tags:
  *       - Películas
  *     summary: Listar y filtrar películas
- *     description: |
- *       ### cURL
- *       ```bash
- *       curl -k "https://localhost:3000/peliculas/?titulo=matrix" -H "x-api-key: TU_API_KEY"
- *       ```
- *
- *       ### JavaScript
- *       ```js
- *       fetch("https://localhost:3000/peliculas/?titulo=matrix", {
- *         headers: { "x-api-key": "TU_API_KEY" }
- *       })
- *         .then((respuesta) => respuesta.json())
- *         .then((peliculas) => console.log(peliculas));
- *       ```
  *     security:
  *       - ApiKeyAuth: []
  *     parameters:
@@ -62,40 +98,24 @@ router.post('/', validarPelicula, async (req, res) => {
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Pelicula'
- *       '401':
- *         description: API key inválida o faltante.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  *       '404':
  *         description: No se encontraron películas.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '503':
- *         description: Fuera del horario de servicio.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  */
-router.get('/', async (req, res) => {
-    const resultado = await listarPeliculas(req.query);
+router.get('/', async (req, res, next) => {
+    try {
+        const resultado = await listarPeliculas(req.query);
 
-    if (resultado.length === 0) {
-        return res.status(404).json({
-            mensaje: "Película no encontrada"
-        });
+        if (resultado.length === 0) {
+            return res.status(404).json({
+                mensaje: 'Película no encontrada'
+            });
+        }
+
+        const respuesta = resultado.map(p => formatearPelicula(req, p));
+        res.json(respuesta);
+    } catch (error) {
+        next(error);
     }
-
-    const respuesta = resultado.map(pelicula => ({
-        ...halson(pelicula),
-        link: `${req.protocol}://${req.get('host')}${req.baseUrl}/${pelicula.id}`
-    }));
-
-    res.json(respuesta);
 });
 
 /**
@@ -105,20 +125,6 @@ router.get('/', async (req, res) => {
  *     tags:
  *       - Películas
  *     summary: Buscar película por ID
- *     description: |
- *       ### cURL
- *       ```bash
- *       curl -k "https://localhost:3000/peliculas/1" -H "x-api-key: TU_API_KEY"
- *       ```
- *
- *       ### JavaScript
- *       ```js
- *       fetch("https://localhost:3000/peliculas/1", {
- *         headers: { "x-api-key": "TU_API_KEY" }
- *       })
- *         .then((respuesta) => respuesta.json())
- *         .then((pelicula) => console.log(pelicula));
- *       ```
  *     security:
  *       - ApiKeyAuth: []
  *     parameters:
@@ -136,59 +142,114 @@ router.get('/', async (req, res) => {
  *               $ref: '#/components/schemas/Pelicula'
  *       '400':
  *         description: El ID no es un número válido.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '401':
- *         description: API key inválida o faltante.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  *       '404':
  *         description: Película no encontrada.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       '503':
- *         description: Fuera del horario de servicio.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  */
 router.get('/:id', async (req, res, next) => {
+    try {
+        const id = parsearId(req.params.id);
+        const pelicula = await buscarPelicula(id);
 
-    const id = parseInt(req.params.id, 10);
+        if (!pelicula) {
+            const error = new Error('Película no encontrada');
+            error.statusCode = 404;
+            return next(error);
+        }
 
-    if (Number.isNaN(id)) {
-        const error = new Error(
-            'El id de la película debe ser un número válido'
-        );
-
-        error.statusCode = 400;
-
-        return next(error);
+        res.json(formatearPelicula(req, pelicula));
+    } catch (error) {
+        next(error);
     }
+});
 
-    const pelicula = await buscarPelicula(id);
+/**
+ * @swagger
+ * /peliculas/{id}:
+ *   put:
+ *     tags:
+ *       - Películas
+ *     summary: Actualizar una película existente
+ *     security:
+ *       - ApiKeyAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/PeliculaInput'
+ *     responses:
+ *       '200':
+ *         description: Película actualizada.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Pelicula'
+ *       '400':
+ *         description: ID o datos inválidos.
+ *       '404':
+ *         description: Película no encontrada.
+ */
+router.put('/:id', validarPelicula, async (req, res, next) => {
+    try {
+        const id = parsearId(req.params.id);
+        const actualizada = await actualizarPelicula(id, req.body);
 
-    if (pelicula) {
-        const respuesta = {
-            ...halson(pelicula),
-            link: `${req.protocol}://${req.get('host')}${req.originalUrl}`
-        };
+        if (!actualizada) {
+            const error = new Error('Película no encontrada');
+            error.statusCode = 404;
+            return next(error);
+        }
 
-        return res.json(respuesta);
+        res.json(formatearPelicula(req, actualizada));
+    } catch (error) {
+        next(error);
     }
+});
 
-    const error = new Error('Película no encontrada');
+/**
+ * @swagger
+ * /peliculas/{id}:
+ *   delete:
+ *     tags:
+ *       - Películas
+ *     summary: Eliminar una película por ID
+ *     security:
+ *       - ApiKeyAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       '204':
+ *         description: Película eliminada correctamente (sin contenido).
+ *       '400':
+ *         description: El ID no es un número válido.
+ *       '404':
+ *         description: Película no encontrada.
+ */
+router.delete('/:id', async (req, res, next) => {
+    try {
+        const id = parsearId(req.params.id);
+        const eliminada = await eliminarPelicula(id);
 
-    error.statusCode = 404;
+        if (!eliminada) {
+            const error = new Error('Película no encontrada');
+            error.statusCode = 404;
+            return next(error);
+        }
 
-    return next(error);
+        res.status(204).send();
+    } catch (error) {
+        next(error);
+    }
 });
 
 export default router;
@@ -197,7 +258,7 @@ export default router;
  * @swagger
  * tags:
  *   - name: Películas
- *     description: Consulta, filtrado y búsqueda de películas.
+ *     description: Consulta, creación, actualización y eliminación de películas.
  * components:
  *   securitySchemes:
  *     ApiKeyAuth:
@@ -206,31 +267,34 @@ export default router;
  *       name: x-api-key
  *       description: Usa el valor configurado en la variable de entorno API_KEY.
  *   schemas:
- *     Pelicula:
+ *     PeliculaInput:
  *       type: object
  *       required:
- *         - id
  *         - titulo
  *         - director
  *         - anio
- *         - link
  *       properties:
- *         id:
- *           type: integer
- *           example: 1
  *         titulo:
  *           type: string
- *           example: Inception
+ *           example: Dune
  *         director:
  *           type: string
- *           example: Christopher Nolan
+ *           example: Denis Villeneuve
  *         anio:
  *           type: integer
- *           example: 2010
- *         link:
- *           type: string
- *           format: uri
- *           example: https://localhost:3000/peliculas/1
+ *           example: 2021
+ *     Pelicula:
+ *       allOf:
+ *         - $ref: '#/components/schemas/PeliculaInput'
+ *         - type: object
+ *           properties:
+ *             id:
+ *               type: integer
+ *               example: 1
+ *             link:
+ *               type: string
+ *               format: uri
+ *               example: https://localhost:3000/peliculas/1
  *     Error:
  *       type: object
  *       required:

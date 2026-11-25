@@ -153,3 +153,84 @@ test('GET /peliculas comunica errores de la base de datos', async (t) => {
 
     expect(respuesta).to.have.status(500);
 });
+
+test('PUT /peliculas/:id actualiza y devuelve la película', async (t) => {
+    prepararSolicitud(t);
+    const consulta = t.mock.method(conexion, 'execute', async () => [{ affectedRows: 1 }]);
+
+    const respuesta = await request.execute(app)
+        .put('/peliculas/1')
+        .set('x-api-key', apiKey)
+        .send({ titulo: ' Arrival ', director: 'Denis Villeneuve', anio: 2016 });
+
+    expect(respuesta).to.have.status(200);
+    expect(respuesta.body).to.include({
+        id: 1, titulo: 'Arrival', director: 'Denis Villeneuve', anio: 2016
+    });
+    expect(respuesta.body.link).to.match(/\/peliculas\/1$/);
+    expect(consulta.mock.calls[0].arguments[1])
+        .to.deep.equal(['Arrival', 'Denis Villeneuve', 2016, 1]);
+});
+
+test('PUT /peliculas/:id informa si la película no existe', async (t) => {
+    prepararSolicitud(t);
+    t.mock.method(conexion, 'execute', async () => [{ affectedRows: 0 }]);
+
+    const respuesta = await request.execute(app)
+        .put('/peliculas/999')
+        .set('x-api-key', apiKey)
+        .send({ titulo: 'Arrival', director: 'Denis Villeneuve', anio: 2016 });
+
+    expect(respuesta).to.have.status(404);
+    expect(respuesta.body.mensaje).to.equal('Película no encontrada');
+});
+
+test('PUT /peliculas/:id valida los datos antes de modificar la base', async (t) => {
+    prepararSolicitud(t);
+    const consulta = t.mock.method(conexion, 'execute', async () => []);
+
+    const respuesta = await request.execute(app)
+        .put('/peliculas/1')
+        .set('x-api-key', apiKey)
+        .send({ titulo: '', director: 'Director', anio: 2016 });
+
+    expect(respuesta).to.have.status(400);
+    expect(consulta.mock.callCount()).to.equal(0);
+});
+
+test('DELETE /peliculas/:id elimina la película sin devolver contenido', async (t) => {
+    prepararSolicitud(t);
+    const consulta = t.mock.method(conexion, 'execute', async () => [{ affectedRows: 1 }]);
+
+    const respuesta = await request.execute(app)
+        .delete('/peliculas/1')
+        .set('x-api-key', apiKey);
+
+    expect(respuesta).to.have.status(204);
+    expect(respuesta.text).to.equal('');
+    expect(consulta.mock.calls[0].arguments[1]).to.deep.equal([1]);
+});
+
+test('DELETE /peliculas/:id informa si la película no existe', async (t) => {
+    prepararSolicitud(t);
+    t.mock.method(conexion, 'execute', async () => [{ affectedRows: 0 }]);
+
+    const respuesta = await request.execute(app)
+        .delete('/peliculas/999')
+        .set('x-api-key', apiKey);
+
+    expect(respuesta).to.have.status(404);
+    expect(respuesta.body.mensaje).to.equal('Película no encontrada');
+});
+
+test('DELETE /peliculas/:id rechaza un ID inválido', async (t) => {
+    prepararSolicitud(t);
+    const consulta = t.mock.method(conexion, 'execute', async () => []);
+
+    const respuesta = await request.execute(app)
+        .delete('/peliculas/no-es-numero')
+        .set('x-api-key', apiKey);
+
+    expect(respuesta).to.have.status(400);
+    expect(consulta.mock.callCount()).to.equal(0);
+});
