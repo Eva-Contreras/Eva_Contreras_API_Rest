@@ -6,7 +6,8 @@ conexión HTTPS.
 
 ## Requisitos
 
-- Node.js y npm.
+- Node.js 20 o 22 en adelante, y npm.
+- MySQL con acceso a la base de datos de películas.
 - Certificado y clave HTTPS en `ssl/server.crt` y `ssl/server.key`.
 
 ## Instalación y ejecución
@@ -17,12 +18,38 @@ Desde esta carpeta, instala las dependencias:
 npm install
 ```
 
-Crea un archivo `.env` con la API key que utilizará el servidor:
+Configura el archivo `.env` con la API key y los datos de conexión a MySQL:
 
 ```env
 API_KEY=tu_clave_api
 PORT=3000
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=tu_usuario
+DB_PASSWORD=tu_contraseña
+DB_NAME=api_peliculas_db
 ```
+
+Antes de iniciar la API, crea la base de datos y la tabla con el siguiente SQL
+desde un cliente MySQL, usando una cuenta con permisos suficientes:
+
+```sql
+CREATE DATABASE IF NOT EXISTS api_peliculas_db
+  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE api_peliculas_db;
+
+CREATE TABLE IF NOT EXISTS peliculas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    titulo VARCHAR(255) NOT NULL,
+    director VARCHAR(150) NOT NULL,
+    anio INT NOT NULL,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+El catálogo no se carga automáticamente; agrega las películas con la API o con
+sentencias `INSERT` en MySQL. Si utilizas otro nombre en `DB_NAME`, crea y
+selecciona esa base de datos en lugar de `api_peliculas_db`.
 
 `PORT` es opcional; si no se define, se usa el puerto `3000`. Inicia el servidor
 desde esta misma carpeta:
@@ -33,8 +60,8 @@ npm start
 
 ## Pruebas
 
-Ejecuta las pruebas de las rutas GET de películas (con Chai-HTTP) y del
-middleware de horario laboral:
+Ejecuta las pruebas de las rutas de películas (con Chai-HTTP y la base de
+datos simulada) y del middleware de horario laboral:
 
 ```bash
 npm run test
@@ -65,6 +92,9 @@ El generador compartido está en `scripts/generarOpenapi.js`; las interfaces y e
 endpoint de la especificación están separados en `src/documentation/`. Swagger
 UI genera su propia página HTML dinámicamente, mientras que RapiDoc se monta en
 `public/api-reference.html`.
+
+El proyecto usa un `override` de npm para corregir una vulnerabilidad en la
+dependencia `glob` de `swagger-jsdoc`, sin sustituir el generador de OpenAPI.
 
 <!-- swagger-description:start -->
 
@@ -126,8 +156,9 @@ Para crear una película, envía JSON con los tres campos requeridos:
 }
 ```
 
-`titulo` y `director` deben ser cadenas no vacías; `anio` debe ser un número
-entero positivo. Si la validación falla, la API responde con HTTP `400`.
+`titulo` y `director` deben ser cadenas no vacías de hasta 255 y 150 caracteres,
+respectivamente; `anio` debe ser un entero positivo de hasta 2147483647.
+Si la validación falla, la API responde con HTTP `400`.
 
 Para subir un archivo, usa una solicitud `multipart/form-data` con el campo
 `archivo`. Los archivos se guardan en `uploads/` y sus datos se agregan a
@@ -135,8 +166,7 @@ Para subir un archivo, usa una solicitud `multipart/form-data` con el campo
 
 ## Datos y registros
 
-- El catálogo inicial de películas y las películas agregadas se mantienen en
-  memoria; las nuevas películas se pierden al reiniciar el proceso.
+- Las películas se almacenan en MySQL y se conservan al reiniciar el proceso.
 - Los accesos se registran en `logs/accesos.log`.
 - Los errores se registran en `logs/errores.log`.
 - Los metadatos de archivos subidos se guardan en `metadata.json`.
@@ -147,8 +177,10 @@ Para subir un archivo, usa una solicitud `multipart/form-data` con el campo
 .
 ├── src/
 │   ├── index.js
+│   ├── database/          # Conexión compartida a MySQL
 │   ├── middleware/
 │   ├── router/
+│   ├── services/          # Consultas de películas
 │   └── views/
 ├── logs/                  # Registros de accesos y errores
 ├── ssl/                  # Certificado y clave HTTPS

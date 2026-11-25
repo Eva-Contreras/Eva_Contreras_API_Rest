@@ -1,25 +1,12 @@
 import express from 'express';
 import halson from 'halson';
 import { validarPelicula } from '../middleware/validarMiddleware.js';
+import { buscarPelicula, crearPelicula, listarPeliculas } from '../services/peliculasService.js';
 
 const router = express.Router();
 
-const peliculas = [
-    { id: 1, titulo: "Inception", director: "Christopher Nolan", anio: 2010 },
-    { id: 2, titulo: "Interstellar", director: "Christopher Nolan", anio: 2014 },
-    { id: 3, titulo: "TinkerBell", director: "Bradley Raymond", anio: 2008 },
-    { id: 4, titulo: "The Matrix", director: "Wachowski Sisters", anio: 1999 },
-    { id: 5, titulo: "Gladiator", director: "Ridley Scott", anio: 2000 },
-    { id: 6, titulo: "Snoopy y Charlie Brown: La pelicula", director: "Steve Martino", anio: 2015 }
-];
-
-router.post('/', validarPelicula, (req, res) => {
-    const pelicula = {
-        id: Math.max(...peliculas.map(item => item.id)) + 1,
-        ...req.body
-    };
-
-    peliculas.push(pelicula);
+router.post('/', validarPelicula, async (req, res) => {
+    const pelicula = await crearPelicula(req.body);
 
     res.status(201).json({
         ...halson(pelicula),
@@ -94,27 +81,8 @@ router.post('/', validarPelicula, (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/', (req, res) => {
-
-    let resultado = peliculas;
-
-    if (req.query.titulo) {
-        resultado = resultado.filter(
-            p => p.titulo.toLowerCase().includes(req.query.titulo.toLowerCase())
-        );
-    }
-
-    if (req.query.director) {
-        resultado = resultado.filter(
-            p => p.director.toLowerCase().includes(req.query.director.toLowerCase())
-        );
-    }
-
-    if (req.query.anio) {
-        resultado = resultado.filter(
-            p => p.anio === parseInt(req.query.anio)
-        );
-    }
+router.get('/', async (req, res) => {
+    const resultado = await listarPeliculas(req.query);
 
     if (resultado.length === 0) {
         return res.status(404).json({
@@ -191,7 +159,7 @@ router.get('/', (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/:id', (req, res, next) => {
+router.get('/:id', async (req, res, next) => {
 
     const id = parseInt(req.params.id, 10);
 
@@ -205,7 +173,7 @@ router.get('/:id', (req, res, next) => {
         return next(error);
     }
 
-    const pelicula = peliculas.find(p => p.id === id);
+    const pelicula = await buscarPelicula(id);
 
     if (pelicula) {
         const respuesta = {

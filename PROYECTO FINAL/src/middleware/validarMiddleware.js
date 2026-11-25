@@ -1,9 +1,9 @@
 import Joi from 'joi';
 
 const peliculaSchema = Joi.object({
-    titulo: Joi.string().trim().min(1).required(),
-    director: Joi.string().trim().min(1).required(),
-    anio: Joi.number().integer().positive().required()
+    titulo: Joi.string().trim().min(1).max(255).required(),
+    director: Joi.string().trim().min(1).max(150).required(),
+    anio: Joi.number().integer().positive().max(2147483647).required()
 }).unknown(false);
 
 export function validarPelicula(req, res, next) {
