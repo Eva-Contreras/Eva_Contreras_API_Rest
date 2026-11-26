@@ -1,5 +1,5 @@
 import winston from 'winston';
-import { errorLogPath } from './logPaths.js';
+import { errorLogPath, enVercel } from './logPaths.js';
 
 const logger = winston.createLogger({
   level: 'error',
@@ -9,7 +9,7 @@ const logger = winston.createLogger({
   ),
   transports: [
     new winston.transports.Console(),
-    new winston.transports.File({ filename: errorLogPath })
+    ...(enVercel ? [] : [new winston.transports.File({ filename: errorLogPath })])
   ]
 });
 

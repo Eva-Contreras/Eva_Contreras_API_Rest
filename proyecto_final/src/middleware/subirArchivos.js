@@ -1,11 +1,13 @@
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 
-const metadataPath = './metadata.json';
+const enVercel = Boolean(process.env.VERCEL);
+const metadataPath = enVercel ? path.join(os.tmpdir(), 'metadata.json') : './metadata.json';
 
 const storage = multer.diskStorage({
-    destination: 'uploads/',
+    destination: enVercel ? os.tmpdir() : 'uploads/',
     filename: (req, file, callback) => {
         callback(null, path.basename(file.originalname));
     }

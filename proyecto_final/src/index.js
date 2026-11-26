@@ -36,13 +36,15 @@ app.use(
     '/jsdoc',
     express.static(fileURLToPath(new URL('../docs', import.meta.url)))
 );
-app.use('/uploads', express.static('uploads'));
+if (!process.env.VERCEL) {
+    app.use('/uploads', express.static('uploads'));
+}
 app.use(morgan(':remote-addr - :remote-user [:local-date] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"', { stream: accesos }));
 app.use(horarioLaboral);
 
 // Vistas
 app.set('view engine', 'pug');
-app.set('views', './src/views');
+app.set('views', fileURLToPath(new URL('./views', import.meta.url)));
 
 app.get('/',(req,res,next) => {
     res.render('hola', 

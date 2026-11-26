@@ -1,8 +1,10 @@
 import morgan from 'morgan';
 import fs from 'fs';
-import { accessLogPath } from './logPaths.js';
+import { accessLogPath, enVercel } from './logPaths.js';
 
-const accesos = fs.createWriteStream(accessLogPath, { flags: 'a' });
+const accesos = enVercel
+    ? process.stdout
+    : fs.createWriteStream(accessLogPath, { flags: 'a' });
 
 morgan.token('local-date', () => {
     const fecha = new Date();
