@@ -1,5 +1,10 @@
 {
   "version": 2,
+  "functions": {
+    "api/index.js": {
+      "includeFiles": "{docs/**,openapi.yaml,src/views/**,src/assets/**}"
+    }
+  },
   "rewrites": [
     { "source": "/(.*)", "destination": "/api/index.js" }
   ]

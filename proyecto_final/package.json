@@ -24,7 +24,8 @@
     "test": "node --test",
     "start": "node src/index.js",
     "openapi": "node scripts/exportarOpenapiYaml.js",
-    "doc": "jsdoc -c jsdoc.json"
+    "doc": "jsdoc -c jsdoc.json",
+    "vercel-build": "jsdoc -c jsdoc.json"
   },
   "keywords": [],
   "author": "",
